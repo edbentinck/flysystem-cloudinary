@@ -15,13 +15,17 @@ class CloudinaryAdapter implements AdapterInterface
     /** @var ApiFacade */
     private $api;
 
+    /** @var string */
+    private $root;
+
     use NotSupportingVisibilityTrait; // We have no visibility for paths, due all of them are public
     use StreamedTrait; // We have no streaming in Cloudinary API, so we need this polyfill
     use StreamedCopyTrait;
 
-    public function __construct(ApiFacade $api)
+    public function __construct(ApiFacade $api, $root='')
     {
         $this->api = $api;
+        $this->root = $root;
     }
 
     /**
@@ -38,7 +42,9 @@ class CloudinaryAdapter implements AdapterInterface
         $overwrite = (bool)$config->get('disable_asserts');
 
         try {
-            return $this->normalizeMetadata($this->api->upload($path, $contents, $overwrite));
+            return $this->normalizeMetadata(
+                $this->api->upload($this->fullPath($path), $contents, $overwrite)
+            );
         } catch (\Exception $e) {
             return false;
         }
@@ -56,7 +62,9 @@ class CloudinaryAdapter implements AdapterInterface
     public function update($path, $contents, Config $config)
     {
         try {
-            return $this->normalizeMetadata($this->api->upload($path, $contents, true));
+            return $this->normalizeMetadata(
+                $this->api->upload($this->fullPath($path), $contents, true)
+            );
         } catch (\Exception $e) {
             return false;
         }
@@ -73,7 +81,7 @@ class CloudinaryAdapter implements AdapterInterface
     public function rename($path, $newPath)
     {
         try {
-            return (bool) $this->api->rename($path, $newPath);
+            return (bool) $this->api->rename($this->fullPath($path), $this->fullPath($newPath));
         } catch (\Exception $e) {
             return false;
         }
@@ -88,10 +96,12 @@ class CloudinaryAdapter implements AdapterInterface
      */
     public function delete($path)
     {
-        try {
-            $response = $this->api->deleteResources([$path]);
+        $fullPath = $this->fullPath;
 
-            return $response['deleted'][$path] === 'deleted';
+        try {
+            $response = $this->api->deleteResources([$fullPath]);
+
+            return $response['deleted'][$fullPath] === 'deleted';
         } catch (Api\Error $e) {
             return false;
         }
@@ -107,7 +117,9 @@ class CloudinaryAdapter implements AdapterInterface
     public function deleteDir($dirname)
     {
         try {
-            $response = $this->api->delete_resources_by_prefix(rtrim($dirname, '/').'/');
+            $response = $this->api->delete_resources_by_prefix(
+                rtrim($this->fullPath($dirname), '/').'/'
+            );
 
             return is_array($response['deleted']);
         } catch (Api\Error $e) {
@@ -128,7 +140,7 @@ class CloudinaryAdapter implements AdapterInterface
     public function createDir($dirname, Config $config)
     {
         return [
-            'path' => rtrim($dirname, '/').'/',
+            'path' => rtrim($this->fullPath($dirname), '/').'/',
             'type' => 'dir',
         ];
     }
@@ -142,7 +154,7 @@ class CloudinaryAdapter implements AdapterInterface
      */
     public function has($path)
     {
-        return $this->getMetadata($path);
+        return $this->getMetadata($this->fullPath($path));
     }
 
     /**
@@ -154,7 +166,7 @@ class CloudinaryAdapter implements AdapterInterface
      */
     public function read($path)
     {
-        if ($response = $this->readStream($path)) {
+        if ($response = $this->readStream($this->fullPath($path))) {
             return ['contents' => stream_get_contents($response['stream']), 'path' => $response['path']];
         }
 
@@ -168,10 +180,11 @@ class CloudinaryAdapter implements AdapterInterface
      */
     public function readStream($path)
     {
+        $fullPath = $this->fullPath($path);
         try {
             return [
-                'stream' => $this->api->content($path),
-                'path' => $path,
+                'stream' => $this->api->content($fullPath),
+                'path' => $fullPath,
             ];
         } catch (\Exception $e) {
             return false;
@@ -225,7 +238,11 @@ class CloudinaryAdapter implements AdapterInterface
 
     private function doListContents($directory = '', array $storage = ['files' => []])
     {
-        $options = ['prefix' => $directory, 'max_results' => 500, 'type' => 'upload'];
+        $options = [
+            'prefix' => $this->fullPath($directory),
+            'max_results' => 500,
+            'type' => 'upload'
+        ];
         if (array_key_exists('next_cursor', $storage)) {
             $options['next_cursor'] = $storage['next_cursor'];
         }
@@ -254,7 +271,9 @@ class CloudinaryAdapter implements AdapterInterface
     public function getMetadata($path)
     {
         try {
-            return $this->normalizeMetadata($this->api->resource($path));
+            return $this->normalizeMetadata(
+                $this->api->resource($this->fullPath($path))
+            );
         } catch (\Exception $e) {
             return false;
         }
@@ -305,5 +324,10 @@ class CloudinaryAdapter implements AdapterInterface
             'timestamp' => array_key_exists('created_at', $resource) ? strtotime($resource['created_at']) : false,
             'version' => array_key_exists('version', $resource) ? $resource['version'] : 1,
         ];
+    }
+
+    private function fullPath($path)
+    {
+        return rtrim($this->root, '/') . '/' . ltrim($path, '/');
     }
 }
