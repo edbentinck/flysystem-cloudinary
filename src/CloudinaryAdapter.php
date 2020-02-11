@@ -319,7 +319,7 @@ class CloudinaryAdapter implements AdapterInterface
     {
         return !$resource instanceof \ArrayObject && !is_array($resource) ? false : [
             'type' => 'file',
-            'path' => $resource['path'],
+            'path' => $this->trimRoot($resource['path']),
             'size' => array_key_exists('bytes', $resource) ? $resource['bytes'] : false,
             'timestamp' => array_key_exists('created_at', $resource) ? strtotime($resource['created_at']) : false,
             'version' => array_key_exists('version', $resource) ? $resource['version'] : 1,
