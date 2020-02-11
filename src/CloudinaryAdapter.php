@@ -25,7 +25,7 @@ class CloudinaryAdapter implements AdapterInterface
     public function __construct(ApiFacade $api, $root='')
     {
         $this->api = $api;
-        $this->root = $root;
+        $this->root = rtrim($root, '/');
     }
 
     /**
@@ -328,6 +328,11 @@ class CloudinaryAdapter implements AdapterInterface
 
     private function fullPath($path)
     {
-        return rtrim($this->root, '/') . '/' . ltrim($path, '/');
+        return $this->root . '/' . $this->trimRoot($path);
+    }
+
+    private function trimRoot($path)
+    {
+        return ltrim(ltrim($path, '/'), $this->root);
     }
 }
