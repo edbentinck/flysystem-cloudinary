@@ -333,6 +333,6 @@ class CloudinaryAdapter implements AdapterInterface
 
     private function trimRoot($path)
     {
-        return ltrim(ltrim($path, '/'), $this->root);
+        return ltrim(ltrim(ltrim($path, '/'), $this->root), '/');
     }
 }
