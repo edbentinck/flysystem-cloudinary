@@ -180,11 +180,10 @@ class CloudinaryAdapter implements AdapterInterface
      */
     public function readStream($path)
     {
-        $fullPath = $this->fullPath($path);
         try {
             return [
-                'stream' => $this->api->content($fullPath),
-                'path' => $fullPath,
+                'stream' => $this->api->content($this->fullPath($path)),
+                'path' => $path,
             ];
         } catch (\Exception $e) {
             return false;
