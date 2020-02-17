@@ -18,14 +18,18 @@ class CloudinaryAdapter implements AdapterInterface
     /** @var string */
     private $root;
 
+    /** @var array */
+    private $defaultTransformations;
+
     use NotSupportingVisibilityTrait; // We have no visibility for paths, due all of them are public
     use StreamedTrait; // We have no streaming in Cloudinary API, so we need this polyfill
     use StreamedCopyTrait;
 
-    public function __construct(ApiFacade $api, $root='')
+    public function __construct(ApiFacade $api, $root='', $defaultTransformations=[])
     {
         $this->api = $api;
         $this->root = rtrim($root, '/');
+        $this->defaultTransformations = $defaultTransformations;
     }
 
     /**
@@ -333,5 +337,10 @@ class CloudinaryAdapter implements AdapterInterface
     private function trimRoot($path)
     {
         return ltrim(ltrim(ltrim($path, '/'), $this->root), '/');
+    }
+
+    private function getTransformations($transformations)
+    {
+        return array_merge($this->defaultTransformations, $transformations);
     }
 }
