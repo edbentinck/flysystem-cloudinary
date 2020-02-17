@@ -166,7 +166,7 @@ class ApiFacade extends BaseApi
      */
     public function url($path, array $options = [])
     {
-        return cloudinary_url($this->converter->pathToId($path), $options);
+        return cloudinary_url($path, $options);
     }
 
     /**
