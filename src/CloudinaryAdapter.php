@@ -166,7 +166,7 @@ class CloudinaryAdapter implements AdapterInterface
      */
     public function read($path)
     {
-        if ($response = $this->readStream($this->fullPath($path))) {
+        if ($response = $this->readStream($path)) {
             return ['contents' => stream_get_contents($response['stream']), 'path' => $response['path']];
         }
 
