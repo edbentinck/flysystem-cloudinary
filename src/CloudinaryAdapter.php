@@ -161,6 +161,11 @@ class CloudinaryAdapter implements AdapterInterface
         return $this->getMetadata($this->fullPath($path));
     }
 
+    public function getUrl($path, $transformations=[])
+    {
+        return $this->api->url($this->fullPath($path), $this->getTransformations($transformations));
+    }
+
     /**
      * Read a file.
      *
